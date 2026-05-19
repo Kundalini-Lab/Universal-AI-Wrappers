@@ -1,0 +1,43 @@
+name: Daily AI Asset Factory
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      actions: write
+
+    steps:
+    - name: Checkout repository code
+      uses: actions/checkout@v4
+
+    - name: Set up Python Environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: pip install requests
+
+    - name: Run AI Automation Engine
+      env:
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      run: |
+        python app.py
+
+    - name: Automatically Commit and Push Changes to GitHub
+      # CRITICAL FIX: The "|| true" statement forces the pipeline to continue 
+      # even if git says there are no new file changes to update.
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        echo "# Last Automation Run: $(date)" >> RUN_LOG.md
+        git add .
+        git commit -m "Automated update: Synchronized asset pipeline distribution packages" || true
+        git push || true
